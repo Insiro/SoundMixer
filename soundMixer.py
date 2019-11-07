@@ -1,42 +1,54 @@
 from pydub import AudioSegment
 import os
 
-_SECOND = 1000
-
 
 def change_dB_Level(sound, level):
     difference = level - sound.dBFS
     return sound.apply_gain(difference)
 
 
-outputDirectory = "./sound dataset/noisys/"
-cleanDirectory = "./sound dataset/clean/"
-noiseDirectory = "./sound dataset/noise/"
-noisePath = ["subway"]
+UPdBs = list()
 clearSounds = list()
 noiseSounds = list()
 clearSoundFile = noiseSoundFile = None
-UPdBs = [3]
-clearSoundCount = len(os.listdir(cleanDirectory))
-noiseSoundCount = 0
-for filename in os.listdir(cleanDirectory):
+noisePath = list()
+_OUT_DIR = "./sound dataset/noisy/"
+_CLREN_DIR = "./sound dataset/clean/"
+_NOISE_DIR = "./sound dataset/noise/"
+with open("./noiseClass.txt")as fp:
+    while True:
+        line = fp.readline()
+        if line == "":
+            break
+        noisePath.append(line)
+assert len(noisePath) != 0
+with open("./dBClass.txt")as fp:
+    while True:
+        line = fp.readline()
+        if line == "":
+            break
+        UPdBs.append(int(line))
+assert len(UPdBs) != 0
+
+outputFileCount = 0
+for filename in os.listdir(_CLREN_DIR):
     clearSounds.append(filename)
 for path in noisePath:
-    noiseSoundCount += len(os.listdir(noiseDirectory+path))
-    for filename in os.listdir(noiseDirectory+path):
+    outputFileCount += len(os.listdir(_NOISE_DIR+path))
+    for filename in os.listdir(_NOISE_DIR+path):
         noiseSounds.append([path,  filename])
-outputFileCount = noiseSoundCount*clearSoundCount*len(UPdBs)
+outputFileCount = outputFileCount*len(os.listdir(_CLREN_DIR))*len(UPdBs)
 finishCount = 0
 for clearSound in clearSounds:
-    clearSoundFile = AudioSegment.from_file(cleanDirectory+clearSound)
+    clearSoundFile = AudioSegment.from_file(_CLREN_DIR+clearSound)
     clearLength = len(clearSoundFile)
     for noiseSound in noiseSounds:
         if noiseSound[1][-3:] == "mp3":
             noiseSoundFile = AudioSegment.from_mp3(
-                noiseDirectory+noiseSound[0]+"/"+noiseSound[1])
+                _NOISE_DIR+noiseSound[0]+"/"+noiseSound[1])
         else:
             noiseSoundFile = AudioSegment.from_file(
-                noiseDirectory+noiseSounds[0]+"/"+noiseSound[1])
+                _NOISE_DIR+noiseSounds[0]+"/"+noiseSound[1])
         noiseLength = len(noiseSoundFile)
         multi = int(noiseLength/clearLength)if(noiseLength >
                                                clearLength) else 1
@@ -47,6 +59,6 @@ for clearSound in clearSounds:
             # output wav
             finishCount += 1
             combineSound.export(
-                outputDirectory + noiseSound[0]+noiseSound[1][0:-4]+"_" + clearSound + "_"+str(UPdB)+"dB.wav")
+                _OUT_DIR + noiseSound[0]+noiseSound[1][0:-4]+"_" + clearSound + "_"+str(UPdB)+"dB.wav")
             print("{:.4}%\tfinished ".format(str(finishCount/outputFileCount)) + noiseSound[0]+noiseSound[1]
                   [0:-4]+"_" + clearSound + "_"+str(UPdB)+"dB.wav")
