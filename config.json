@@ -1,0 +1,10 @@
+{
+    "originPath": "./sound dataset/clean/",
+    "addPath": "./sound dataset/noise/",
+    "outputPath": "./sound dataset/noisy/",
+    "dB": [-30],
+    "AddCategory": [
+        "subway"
+    ],
+    "mixType": -1
+}

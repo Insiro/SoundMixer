@@ -1,5 +1,6 @@
 from pydub import AudioSegment
 import os
+import json
 
 
 def change_dB_Level(sound, level):
@@ -7,58 +8,72 @@ def change_dB_Level(sound, level):
     return sound.apply_gain(difference)
 
 
+originSoundFile = additionSoundFile = None
+outputFileDir = originalFileDir = addFileDir = ""
 UPdBs = list()
-clearSounds = list()
-noiseSounds = list()
-clearSoundFile = noiseSoundFile = None
-noisePath = list()
-_OUT_DIR = "./sound dataset/noisy/"
-_CLREN_DIR = "./sound dataset/clean/"
-_NOISE_DIR = "./sound dataset/noise/"
-with open("./noiseClass.txt")as fp:
-    while True:
-        line = fp.readline()
-        if line == "":
-            break
-        noisePath.append(line)
-assert len(noisePath) != 0
-with open("./dBClass.txt")as fp:
-    while True:
-        line = fp.readline()
-        if line == "":
-            break
-        UPdBs.append(int(line))
+originSounds = list()
+additionSounds = list()
+ADDPath = list()
+mixtype = 0
+with open("./config.json")as config:
+    data = json.load(config)
+    UPdBs = data["dB"]
+    outputFileDir = data["outputPath"]
+    originalFileDir = data["originPath"]
+    addFileDir = data["addPath"]
+    ADDPath = data["AddCategory"]
+    mixtype = data["mixType"]
+
+asd = True
+if(outputFileDir == ""):
+    print("outputFileDir is not defined")
+    asd = False
+if (originalFileDir == ""):
+    asd = False
+    print("originalFileDir is not defined")
+if (addFileDir == ""):
+    asd = False
+    print("addFileDir is not defined")
+assert asd
+assert len(ADDPath) != 0
 assert len(UPdBs) != 0
 
+
 outputFileCount = 0
-for filename in os.listdir(_CLREN_DIR):
-    clearSounds.append(filename)
-for path in noisePath:
-    outputFileCount += len(os.listdir(_NOISE_DIR+path))
-    for filename in os.listdir(_NOISE_DIR+path):
-        noiseSounds.append([path,  filename])
-outputFileCount = outputFileCount*len(os.listdir(_CLREN_DIR))*len(UPdBs)
+for filename in os.listdir(originalFileDir):
+    originSounds.append(filename)
+for path in ADDPath:
+    outputFileCount += len(os.listdir(addFileDir+path))
+    for filename in os.listdir(addFileDir+path):
+        additionSounds.append([path,  filename])
+outputFileCount = outputFileCount*len(os.listdir(originalFileDir))*len(UPdBs)
 finishCount = 0
-for clearSound in clearSounds:
-    clearSoundFile = AudioSegment.from_file(_CLREN_DIR+clearSound)
-    clearLength = len(clearSoundFile)
-    for noiseSound in noiseSounds:
-        if noiseSound[1][-3:] == "mp3":
-            noiseSoundFile = AudioSegment.from_mp3(
-                _NOISE_DIR+noiseSound[0]+"/"+noiseSound[1])
+for originSound in originSounds:
+    originSoundFile = AudioSegment.from_file(originalFileDir+originSound)
+    originLength = len(originSoundFile)
+    for additionSound in additionSounds:
+        if additionSound[1][-3:] == "mp3":
+            additionSoundFile = AudioSegment.from_mp3(
+                addFileDir+additionSound[0]+"/"+additionSound[1])
         else:
-            noiseSoundFile = AudioSegment.from_file(
-                _NOISE_DIR+noiseSounds[0]+"/"+noiseSound[1])
-        noiseLength = len(noiseSoundFile)
-        multi = int(noiseLength/clearLength)if(noiseLength >
-                                               clearLength) else 1
+            additionSoundFile = AudioSegment.from_file(
+                addFileDir+additionSounds[0]+"/"+additionSound[1])
+        additionLength = len(additionSoundFile)
+        if mixtype == -1:
+            if additionLength > originLength:
+                originSoundFile = originSoundFile * \
+                    int(additionLength / originLength)
+        elif mixtype == 1:
+            if additionLength < originLength:
+                additionSoundFile = additionSoundFile * \
+                    int(originLength / additionLength)
         for UPdB in UPdBs:
             # control dB
             combineSound = change_dB_Level(
-                noiseSoundFile, UPdB).overlay(clearSoundFile*multi)
+                additionSoundFile, UPdB).overlay(originSoundFile)
             # output wav
             finishCount += 1
             combineSound.export(
-                _OUT_DIR + noiseSound[0]+noiseSound[1][0:-4]+"_" + clearSound + "_"+str(UPdB)+"dB.wav")
-            print("{:.4}%\tfinished ".format(str(finishCount/outputFileCount)) + noiseSound[0]+noiseSound[1]
-                  [0:-4]+"_" + clearSound + "_"+str(UPdB)+"dB.wav")
+                outputFileDir + additionSound[0] + additionSound[1][0:-4]+"_" + originSound + "_" + str(UPdB)+"dB.wav")
+            print("{:.4}%\tfinished ".format(str(finishCount/outputFileCount)) + additionSound[0]+additionSound[1]
+                  [0:-4]+"_" + originSound + "_"+str(UPdB)+"dB.wav")

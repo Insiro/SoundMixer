@@ -1,13 +1,24 @@
 # SoundMixwer
 
-sound file must contained in ./sound dataset/clean/
-noise file must contained in .sound dataset/noise/[Category]/
-result file will output in ./sound dataset/noisy/
-and filename will [Category][noisefilename][cleanfilename].wav
+## dir settings
 
-## class file config
+soundfile path will config in 'config.json'
 
-each class must input in one line
+1. path value must ended with '/'
+2. outfut filename
+   [Category][2ndfilename][1stFileName].wav
 
-> bus
-> subway
+## mixtype
+
+1. -1: extend original sound
+2. 0: do nothings
+3. 1: extend additinal sound
+
+## AddCategory config
+
+define as str array
+
+## dB Category config
+
+define as Numeric array  
+it change addition sound file's dB
